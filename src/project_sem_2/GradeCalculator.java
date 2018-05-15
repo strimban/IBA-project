@@ -9,327 +9,422 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static java.lang.StrictMath.round;
 
 public class GradeCalculator {
-    private JPanel main_window;
-    private JLabel program_title;
-    private JLabel current_description;
-    private JPanel single_action_pane;
-    private JFormattedTextField single_input;
-    private JButton single_submit_btn;
-    private JPanel multiple_action_pane;
-    private JLabel first_field_label;
-    private JLabel second_field_label;
-    private JFormattedTextField first_field_text;
-    private JFormattedTextField second_field_text;
-    private JButton multiple_submit_btn;
-    private JLabel placeholder1;
-    private JLabel result_grade_label;
-    private JPanel result_panel;
-    private JButton next_student_btn;
-    private JLabel author_label;
-    private JTable result_table;
-    private JScrollPane scroll_pane;
+    private JPanel mainWindow;
+    private JLabel programTitle;
+    private JLabel currentDescription;
+    private JPanel mainPane;
+    private JPanel actionPane;
+    private JPanel formPane;
+    private JButton nextStepBTN;
+    private JButton resetBTN;
+    private JPanel singleInputPane;
+    private JFormattedTextField singleInputField;
+    private JPanel studentsInputPane;
+    private JPanel studentsFormPane;
+    private JFormattedTextField nameInputField;
+    private JFormattedTextField profStudGradeInputField;
+    private JButton addRowBTN;
+    private JScrollPane studentTablePane;
+    private JTable studentTable;
+    private JPanel gradeProStudentPane;
+    private JLabel evalueterNameLabel;
+    private JFormattedTextField evalueterGradeInput;
+    private JPanel intermediateResultPane;
+    private JLabel intermediateResultLable;
+    private JScrollPane finalResultScrollPane;
+    private JTable finalResultTable;
+    private JPanel authorPane;
+    private JLabel authorLabel;
+    private JPanel finalResultPane;
 
-    private int number_of_students = 0;
-    private boolean first_run = true;
-    private double teacher_grade = 0.0;
-    private Map<String, Map<String, Double>> students_results = new HashMap<>();
-    private Map<String, Double> geometrical_mean_per_student = new HashMap<String, Double>();
-    private String evaluete_person_name = "";
-    private Map<String, Double> tmp_student_map = new HashMap<>();
-    private int tmp_person_counter = 1;
-    private List<String> students_list_new = new ArrayList<>();
-    private List<String> students_list_done = new ArrayList<>();
-    private List<String> students_list_activ = new ArrayList<>();
+    private DefaultTableModel studentsInputModel;
+    private double teacherGrade = -1.0;
+    private double zooming = -1.0;
+    private List<String> studentNames = new ArrayList<>();
+    private Map<String, Double> studentNameWithTeacherGrade = new HashMap<>();
+    private Map<String, Double> toTest = new HashMap<>();
+    private String currentStudent;
+    private List<String> tmpNames = new ArrayList<>();
+    private List<String> doneStudentNames = new ArrayList<>();
+    private List<Double> currentStudentEvaluations = new ArrayList<>();
+    private Map<String, List<Double>> studentNameWithStudentsGrades = new HashMap<>();
+    private Map<String, Double> geometrical_mean_per_student = new HashMap<>();
+    private boolean showIntermediateResults = false;
     private double geometrical_sum;
-    private boolean is_done = false;
+    private double group_median = 1;
+    private boolean done = false;
+    private boolean readyToTest = false;
 
-
-    private void table(){
-        DefaultTableModel model = new DefaultTableModel();
-        model.addColumn("Student Name");
-        model.addColumn("grade in points");
-        model.addColumn("grade in german system");
-        for (Map.Entry<String, Double> entry : geometrical_mean_per_student.entrySet())
-        {
-            double person_median = entry.getValue();
-            double grade_in_hundert = (person_median*teacher_grade)/((person_median*teacher_grade) + geometrical_sum*(1-teacher_grade));
-            grade_in_hundert *= 100;
-            grade_in_hundert = Math.round(grade_in_hundert);
-            double iba_grade;
-            if (grade_in_hundert < 50) iba_grade = 5.0;
-            else if (grade_in_hundert <= 55) iba_grade = 4.0;
-            else if (grade_in_hundert <= 60) iba_grade = 3.7;
-            else if (grade_in_hundert <= 65) iba_grade = 3.3;
-            else if (grade_in_hundert <= 70) iba_grade = 3.0;
-            else if (grade_in_hundert <= 75) iba_grade = 2.7;
-            else if (grade_in_hundert <= 80) iba_grade = 2.3;
-            else if (grade_in_hundert <= 85) iba_grade = 2.0;
-            else if (grade_in_hundert <= 90) iba_grade = 1.7;
-            else if (grade_in_hundert <= 95) iba_grade = 1.3;
-            else iba_grade = 1.0;
-            model.addRow(new Object[]{entry.getKey(), (int)grade_in_hundert, iba_grade});
-        }
-
-        result_table.setModel(model);
-        scroll_pane.setViewportView(result_table);
+    public GradeCalculator() {
+        addRowBTN.addActionListener(new ActionListener() {
+            /**
+             * Invoked when an action occurs.
+             *
+             * @param e the event to be processed
+             */
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                add_student_to_table();
+            }
+        });
+        nextStepBTN.addActionListener(new ActionListener() {
+            /**
+             * Invoked when an action occurs.
+             *
+             * @param e the event to be processed
+             */
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                workflow();
+            }
+        });
+        resetBTN.addActionListener(new ActionListener() {
+            /**
+             * Invoked when an action occurs.
+             *
+             * @param e the event to be processed
+             */
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                reset();
+            }
+        });
+        nameInputField.addActionListener(new ActionListener() {
+            /**
+             * Invoked when an action occurs.
+             *
+             * @param e the event to be processed
+             */
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                profStudGradeInputField.requestFocus();
+            }
+        });
+        singleInputField.addActionListener(new ActionListener() {
+            /**
+             * Invoked when an action occurs.
+             *
+             * @param e the event to be processed
+             */
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                workflow();
+            }
+        });
+        profStudGradeInputField.addActionListener(new ActionListener() {
+            /**
+             * Invoked when an action occurs.
+             *
+             * @param e the event to be processed
+             */
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                add_student_to_table();
+            }
+        });
+        evalueterGradeInput.addActionListener(new ActionListener() {
+            /**
+             * Invoked when an action occurs.
+             *
+             * @param e the event to be processed
+             */
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                workflow();
+            }
+        });
     }
 
-    private void person_info_getter(){
-        String person_who_evaluate = "";
-        tmp_person_counter += 1;
-        current_description.setText("classmate number " + tmp_person_counter + " evaluate " + evaluete_person_name);
-        try {
-            double grade_tmp = Integer.parseInt(second_field_text.getText());
-
-            if (grade_tmp >= 0) {
-                String name_tmp = first_field_text.getText();
-                if (!name_tmp.equals("")) {
-                    if (!tmp_student_map.containsKey(name_tmp) && !name_tmp.equals(evaluete_person_name)) {
-                        tmp_student_map.put(name_tmp, grade_tmp);
-                        first_field_text.setText(person_who_evaluate);
-                        second_field_text.setText("");
-                        if (first_run) {
-                            students_list_new.add(name_tmp);
-                            first_field_text.requestFocusInWindow();
-                        }
-                        else {
-                            second_field_text.requestFocusInWindow();
-                        }
-                    }
-                    else{
-                        JOptionPane.showMessageDialog(null, "This name is taken, enter another name");
-                        tmp_person_counter -= 1;
-                        current_description.setText("Ask classmate number " + tmp_person_counter + " to evaluate you");
-                    }
-                } else {
-                    JOptionPane.showMessageDialog(null, "Enter your Name");
-                    tmp_person_counter -= 1;
-                    current_description.setText("Ask classmate number " + tmp_person_counter + " to evaluate you");
-                }
-                if (!students_list_activ.isEmpty()) try {
-                    person_who_evaluate = students_list_activ.get(tmp_person_counter - 1);
-                    first_field_text.setText(person_who_evaluate);
-                } catch (Exception ignored) {}
-            } else {
-                JOptionPane.showMessageDialog(null, "Enter a grade >= 0");
-                tmp_person_counter -= 1;
-                current_description.setText("Ask classmate number " + tmp_person_counter + " to evaluate you");
-            }
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, "enter a valid number");
-            tmp_person_counter -= 1;
-            current_description.setText("Ask classmate number " + tmp_person_counter + " to evaluate you");
-        }
-
-        if (tmp_person_counter == number_of_students) {
-            first_run = false;
-            // add evaluetion of activ student to the map
-            students_results.put(evaluete_person_name, tmp_student_map);
-            // add acriv student to done list
-            students_list_done.add(evaluete_person_name);
-            // reset tmp student map
-            get_geometrical_mean(tmp_student_map);
-            geometrical_mean_per_student.put(evaluete_person_name, geometrical_sum);
-            tmp_student_map = new HashMap<>();
-            // reset person counter
-            tmp_person_counter = 1;
-            // reset list of students who evaluate
-
-            students_list_activ = new ArrayList<>();
-            if (!students_list_new.isEmpty()){
-                result_grade_label.setText(evaluete_person_name + "'s geometrical mean is " + geometrical_sum);
-                evaluete_person_name = students_list_new.get(0);
-                students_list_new.remove(0);
-                students_list_activ.addAll(students_list_new);
-                students_list_activ.addAll(students_list_done);
-                first_field_text.setText(students_list_activ.get(0));
-                current_description.setText("classmate number " + tmp_person_counter + " evaluate " + evaluete_person_name);
-                person_who_evaluate = students_list_activ.get(0);
-                first_field_text.setText(person_who_evaluate);
-                first_field_text.setEnabled(false);
-                multiple_action_pane.setVisible(false);
-                result_panel.setVisible(true);
-                second_field_label.requestFocusInWindow();
-            }
-            else {
-                result_grade_label.setText(evaluete_person_name + "'s geometrical mean is " + geometrical_sum);
-                get_geometrical_mean(geometrical_mean_per_student);
-                next_student_btn.setText("show results");
-                is_done = true;
-                multiple_action_pane.setVisible(false);
-                result_panel.setVisible(true);
-            }
-
-
-        }
-
+    public static void main(String[] args) {
+        JFrame counter = new JFrame("Grade Calculator");
+        counter.setContentPane(new GradeCalculator().mainWindow);
+        counter.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        counter.setSize(650, 350);
+        counter.setVisible(true);
     }
 
-    private GradeCalculator() {
-        single_submit_btn.addActionListener(new ActionListener() {
-            /**
-             * Invoked when an action occurs.
-             *
-             * @param e the event to be processed
-             */
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (number_of_students == 0) {
-                    set_students_number();
-                }
-                else if (teacher_grade == 0) {
-                    get_teacher_grade();
-                }
-                else {
-                    get_first_person_name();
-                }
-            }
-        });
-        single_input.addActionListener(new ActionListener() {
-            /**
-             * Invoked when an action occurs.
-             *
-             * @param e the event to be processed
-             */
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (number_of_students == 0) {
-                    set_students_number();
-                }
-                else if (teacher_grade == 0) {
-                    get_teacher_grade();
-                }
-                else {
-                    get_first_person_name();
-                }
-            }
-        });
-
-        multiple_submit_btn.addActionListener(new ActionListener() {
-            /**
-             * Invoked when an action occurs.
-             *
-             * @param e the event to be processed
-             */
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                person_info_getter();
-            }
-        });
-
-        second_field_text.addActionListener(new ActionListener() {
-            /**
-             * Invoked when an action occurs.
-             *
-             * @param e the event to be processed
-             */
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                person_info_getter();
-            }
-        });
-        next_student_btn.addActionListener(new ActionListener() {
-            /**
-             * Invoked when an action occurs.
-             *
-             * @param e the event to be processed
-             */
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (!is_done) {
-                    multiple_action_pane.setVisible(true);
-                    result_panel.setVisible(false);
-                    first_field_text.requestFocusInWindow();
-                }
-                else {
-                    current_description.setText(" ");
-                    result_panel.setVisible(false);
-                    scroll_pane.setVisible(true);
-                    table();
-                }
-            }
-        });
-        first_field_text.addActionListener(new ActionListener() {
-            /**
-             * Invoked when an action occurs.
-             *
-             * @param e the event to be processed
-             */
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                second_field_text.requestFocusInWindow();
-            }
-        });
+    private void workflow(){
+        if (teacherGrade == -1.0){
+            get_teacher_grade();
+        }
+        else if (zooming == -1.0) {
+            get_zooming();
+        }
+        else if (studentNameWithTeacherGrade.isEmpty()){
+            student_to_map();
+        }
+        else if (readyToTest){
+            test();
+        }
+        else if (done){
+            calculate_final_results();
+        }
+        else if (!showIntermediateResults){
+            student_evaluation();
+        }
+        else {
+            gradeProStudentPane.setVisible(true);
+            currentDescription.setVisible(true);
+            intermediateResultPane.setVisible(false);
+            showIntermediateResults = false;
+            evalueterGradeInput.requestFocusInWindow();
+        }
     }
 
     private void get_teacher_grade(){
         try {
-            int tmp = Integer.parseInt(single_input.getText());
+            int tmp = Integer.parseInt(singleInputField.getText());
             if (tmp > 0 && tmp <= 100) {
-                teacher_grade = tmp/100.0;
-                single_input.setText("");
-                current_description.setText("Enter name of first person to evaluate");
+                teacherGrade = tmp/100.0;
+                currentDescription.setText("enter zooming parameter");
+                singleInputField.setText("");
+                singleInputField.requestFocusInWindow();
             } else {
                 JOptionPane.showMessageDialog(null, "Enter a grade in points between 1 and 100");
+                singleInputField.setText("");
+                singleInputField.requestFocus();
             }
         } catch (Exception exception) {
             JOptionPane.showMessageDialog(null, "Enter a valid grade");
+            singleInputField.setText("");
+            singleInputField.requestFocus();
         }
     }
-
-    private void get_first_person_name(){
-        single_action_pane.setVisible(false);
-        multiple_action_pane.setVisible(true);
-        String tmp = single_input.getText();
-        if (!tmp.equals("")) {
-            evaluete_person_name = single_input.getText();
-            current_description.setText("classmate number " + tmp_person_counter + " evaluate " + evaluete_person_name);
-            first_field_text.requestFocusInWindow();
-        }
-        else {
-            JOptionPane.showMessageDialog(null, "Enter your Name");
-        }
-    }
-
-    private void set_students_number(){
+    private void get_zooming(){
         try {
-            int tmp = Integer.parseInt(single_input.getText());
-            if (tmp > 0) {
-                number_of_students = tmp;
-                current_description.setText("Ask teacher to enter his grade");
-                single_input.setText("");
+            double tmp = Double.parseDouble(singleInputField.getText());
+            if (tmp >= 0) {
+                zooming = tmp;
+                currentDescription.setText("enter zooming parameter");
+                singleInputField.setText("");
+                student_input_table();
+                studentsInputPane.setVisible(true);
+                singleInputPane.setVisible(false);
+                nameInputField.requestFocusInWindow();
+                currentDescription.setText("Add students and professor evaluation (the sum should be 100)");
             } else {
-                JOptionPane.showMessageDialog(null, "Enter a positive number ");
+                JOptionPane.showMessageDialog(null, "Enter a zooming parameter >= 0");
+                singleInputField.setText("");
+                singleInputField.requestFocus();
             }
         } catch (Exception exception) {
             JOptionPane.showMessageDialog(null, "Enter a valid number");
+            singleInputField.setText("");
+            singleInputField.requestFocus();
         }
     }
+    private void add_student_to_table(){
+        String name = nameInputField.getText();
+        try {
+            if (!name.equals("")) {
+                if(!studentNames.contains(name)){
+                    studentsInputModel.addRow(new Object[]{name, Integer.parseInt(profStudGradeInputField.getText())});
+                    studentTable.updateUI();
+                    studentNames.add(name);
+                    nameInputField.setText("");
+                    profStudGradeInputField.setText("");
+                    nameInputField.requestFocusInWindow();
+                }
+                else {
+                    JOptionPane.showMessageDialog(null, "enter a unique name");
+                    nameInputField.setText("");
+                    nameInputField.requestFocus();
+                }
+            }
+            else {
+                JOptionPane.showMessageDialog(null, "enter a name");
+                nameInputField.setText("");
+                nameInputField.requestFocus();
+            }
+        }catch (Exception e){
+            JOptionPane.showMessageDialog(null, "enter a valid number");
+            profStudGradeInputField.requestFocusInWindow();
+            profStudGradeInputField.setText("");
 
-    private static double round(double value) {
+        }
 
-        long factor = (long) Math.pow(10, 2);
-        value = value * factor;
-        long tmp = Math.round(value);
-        return (double) tmp / factor;
     }
+    private void student_to_map() {
+        DefaultTableModel dtm = (DefaultTableModel) studentTable.getModel();
+        int nRow = dtm.getRowCount(), nCol = dtm.getColumnCount();
+        double tmp = 0;
+        for (int i = 0; i < nRow; i++) {
+            tmp += Double.parseDouble(dtm.getValueAt(i, 1).toString());
+        }
+        if (tmp != 100.0){
+            JOptionPane.showMessageDialog(null, "the sum of teacher grades should be equal to 100");
+            evalueterGradeInput.requestFocusInWindow();
+        }
+        else {
+            studentNames = new ArrayList<>();
+            for (int i = 0; i < nRow; i++) {
+                double teacher_grade = Double.parseDouble(dtm.getValueAt(i, 1).toString()) / 100;
+                String name = dtm.getValueAt(i, 0).toString();
+                studentNames.add(name);
+                studentNameWithTeacherGrade.put(name, teacher_grade);
+            }
+            evalueterNameLabel.setText(studentNames.get(1) + " evlauation");
+            currentDescription.setText("Evaluation of " + studentNames.get(0));
+            studentsInputPane.setVisible(false);
+            gradeProStudentPane.setVisible(true);
+            evalueterGradeInput.requestFocusInWindow();
+        }
+    }
+    private void student_input_table(){
+        studentsInputModel = new DefaultTableModel();
+        studentsInputModel.addColumn("Student Name");
+        studentsInputModel.addColumn("Professor-Student evaluation");
+        studentTable.setModel(studentsInputModel);
+        studentTablePane.setViewportView(studentTable);
+    }
+    private void student_evaluation(){
+        if (tmpNames.isEmpty()){
+            currentStudent = studentNames.get(0);
+            tmpNames.addAll(studentNames);
+            tmpNames.addAll(doneStudentNames);
+            tmpNames.remove(currentStudent);
+        }
+        try {
+            double tmp_note = Double.parseDouble(evalueterGradeInput.getText());
+            if (tmp_note >= 0){
+                currentStudentEvaluations.add(tmp_note);
 
-    private void get_geometrical_mean(Map<String, Double> to_analyze){
-        List<Double> list_of_grades = new ArrayList<>(to_analyze.values());
+                try {
+                    tmpNames.remove(0);
+                    evalueterNameLabel.setText(tmpNames.get(0) + " evlauation");
+                }catch (Exception e){}
+            }
+            else {
+                JOptionPane.showMessageDialog(null, "The grade should be positive");
+
+            }
+        }catch (Exception e){
+            JOptionPane.showMessageDialog(null, "Add valid number");
+        }
+        if (tmpNames.isEmpty()){
+            intermediateResultPane.setVisible(true);
+            studentNameWithStudentsGrades.put(currentStudent, currentStudentEvaluations);
+            get_geometrical_mean();
+            geometrical_mean_per_student.put(currentStudent, geometrical_sum);
+            currentStudentEvaluations = new ArrayList<>();
+            doneStudentNames.add(currentStudent);
+
+            showIntermediateResults = true;
+            gradeProStudentPane.setVisible(false);
+            currentDescription.setVisible(false);
+            intermediateResultPane.setVisible(true);
+            nextStepBTN.requestFocus();
+            intermediateResultLable.setText(currentStudent + "'s intermediate result: " + geometrical_sum);
+
+            try {
+                studentNames.remove(0);
+                currentDescription.setText("Evaluation of " + studentNames.get(0));
+                currentStudent = studentNames.get(0);
+                evalueterNameLabel.setText(studentNames.get(1) + " evlauation");
+            }catch (Exception e){}
+
+
+        }
+        evalueterGradeInput.requestFocusInWindow();
+        evalueterGradeInput.setText("");
+        if (studentNameWithStudentsGrades.size() == studentNameWithTeacherGrade.size()){
+            done = true;
+            nextStepBTN.setText("show results");
+            studentsInputPane.setVisible(false);
+
+        }
+
+
+    }
+    private void get_geometrical_mean(){
+        List<Double> list_of_grades = currentStudentEvaluations;
         double sum = 1;
         for (Double list_of_grade : list_of_grades) {
             sum = list_of_grade * sum;
         }
         geometrical_sum = round(Math.pow(sum, 1.0 / list_of_grades.size()));
     }
+    private void calculate_final_results(){
+        intermediateResultPane.setVisible(false);
+        for (Map.Entry<String, Double> entry : geometrical_mean_per_student.entrySet()){
+            double person_median = entry.getValue();
+            group_median = group_median * Math.pow(person_median, studentNameWithTeacherGrade.get(entry.getKey()));
+        }
+        finalResultPane.setVisible(true);
+        DefaultTableModel resultModel = new DefaultTableModel();
+        resultModel.addColumn("Student Name");
+        resultModel.addColumn("result (points)");
+        resultModel.addColumn("result (german)");
+        for (Map.Entry<String, Double> entry : geometrical_mean_per_student.entrySet()){
+            double points = (Math.pow(entry.getValue(), zooming) * teacherGrade)/((Math.pow(entry.getValue(), zooming) * teacherGrade) + (Math.pow(group_median, zooming)*(1 - teacherGrade)));
+            toTest.put(entry.getKey(), points);
+            points *= 100;
+            points = Math.round(points);
+            double german_grade;
+            if (points < 50) german_grade = 5.0;
+            else if (points <= 55) german_grade = 4.0;
+            else if (points <= 60) german_grade = 3.7;
+            else if (points <= 65) german_grade = 3.3;
+            else if (points <= 70) german_grade = 3.0;
+            else if (points <= 75) german_grade = 2.7;
+            else if (points <= 80) german_grade = 2.3;
+            else if (points <= 85) german_grade = 2.0;
+            else if (points <= 90) german_grade = 1.7;
+            else if (points <= 95) german_grade = 1.3;
+            else german_grade = 1.0;
+            resultModel.addRow(new Object[]{entry.getKey(), (int)points, german_grade});
+        }
+        finalResultTable.setModel(resultModel);
+        finalResultScrollPane.setViewportView(finalResultTable);
+        nextStepBTN.setText("run test");
+        readyToTest = true;
 
-    public static void main(String[] args) {
-        JFrame counter = new JFrame("Grade Calculator");
-        counter.setContentPane(new GradeCalculator().main_window);
-        counter.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        counter.pack();
-        counter.setVisible(true);
+    }
+    private void test(){
+        double test_left = 1;
+        for (Map.Entry<String, Double> entry : toTest.entrySet()){
+            test_left = test_left * Math.pow((entry.getValue()/(1-entry.getValue())), studentNameWithTeacherGrade.get(entry.getKey()));
+        }
+        test_left *= 10000;
+        test_left = Math.round(test_left);
+        double test_right = teacherGrade/(1-teacherGrade);
+        test_right *= 10000;
+        test_right = Math.round(test_right);
+        test_right = test_right/10000;
+        test_left = test_left/10000;
+        String test_result = "the left site of test = " + test_left + "; \nthe right site of test = " + test_right;
+        if (test_left == test_right){
+            test_result += "\ntest was successful";
+        }
+        JOptionPane.showMessageDialog(null, test_result);
+    }
+    private void reset(){
+        teacherGrade = -1.0;
+        zooming = -1.0;
+        studentNames = new ArrayList<>();
+        studentNameWithTeacherGrade = new HashMap<String, Double>();
+        toTest = new HashMap<>();
+        tmpNames = new ArrayList<>();
+        doneStudentNames = new ArrayList<>();
+        currentStudentEvaluations = new ArrayList<>();
+        studentNameWithStudentsGrades = new HashMap<>();
+        geometrical_mean_per_student = new HashMap<>();
+        showIntermediateResults = false;
+
+        group_median = 1;
+        done = false;
+        readyToTest = false;
+        nextStepBTN.setText("next step");
+        currentDescription.setText("Add professor evlauation");
+        currentDescription.setVisible(true);
+        singleInputPane.setVisible(true);
+        studentsInputPane.setVisible(false);
+        gradeProStudentPane.setVisible(false);
+        intermediateResultPane.setVisible(false);
+        finalResultPane.setVisible(false);
+        singleInputField.requestFocus();
     }
 }
