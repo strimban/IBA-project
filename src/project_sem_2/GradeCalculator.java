@@ -139,7 +139,7 @@ public class GradeCalculator {
 
             students_list_activ = new ArrayList<>();
             if (!students_list_new.isEmpty()){
-                result_grade_label.setText(evaluete_person_name + "'s result is " + geometrical_sum);
+                result_grade_label.setText(evaluete_person_name + "'s geometrical mean is " + geometrical_sum);
                 evaluete_person_name = students_list_new.get(0);
                 students_list_new.remove(0);
                 students_list_activ.addAll(students_list_new);
@@ -154,13 +154,14 @@ public class GradeCalculator {
                 second_field_label.requestFocusInWindow();
             }
             else {
-                result_grade_label.setText(evaluete_person_name + "'s result is " + geometrical_sum);
+                result_grade_label.setText(evaluete_person_name + "'s geometrical mean is " + geometrical_sum);
                 get_geometrical_mean(geometrical_mean_per_student);
                 next_student_btn.setText("show results");
                 is_done = true;
                 multiple_action_pane.setVisible(false);
                 result_panel.setVisible(true);
             }
+
 
         }
 
