@@ -44,14 +44,14 @@ public class GradeCalculator {
     private double teacherGrade = -1.0;
     private double zooming = -1.0;
     private List<String> studentNames = new ArrayList<>();
-    private Map<String, Double> studentNameWithTeacherGrade = new HashMap<String, Double>();
-    private Map<String, Double> toTest = new HashMap<String, Double>();
+    private Map<String, Double> studentNameWithTeacherGrade = new HashMap<>();
+    private Map<String, Double> toTest = new HashMap<>();
     private String currentStudent;
     private List<String> tmpNames = new ArrayList<>();
     private List<String> doneStudentNames = new ArrayList<>();
     private List<Double> currentStudentEvaluations = new ArrayList<>();
-    private Map<String, List<Double>> studentNameWithStudentsGrades = new HashMap<String, List<Double>>();
-    private Map<String, Double> geometrical_mean_per_student = new HashMap<String, Double>();
+    private Map<String, List<Double>> studentNameWithStudentsGrades = new HashMap<>();
+    private Map<String, Double> geometrical_mean_per_student = new HashMap<>();
     private boolean showIntermediateResults = false;
     private double geometrical_sum;
     private double group_median = 1;
@@ -250,14 +250,12 @@ public class GradeCalculator {
     private void student_to_map() {
         DefaultTableModel dtm = (DefaultTableModel) studentTable.getModel();
         int nRow = dtm.getRowCount(), nCol = dtm.getColumnCount();
-        Object[][] tableData = new Object[nRow][nCol];
         double tmp = 0;
         for (int i = 0; i < nRow; i++) {
             tmp += Double.parseDouble(dtm.getValueAt(i, 1).toString());
         }
         if (tmp != 100.0){
             JOptionPane.showMessageDialog(null, "the sum of teacher grades should be equal to 100");
-            tmp = 0;
             evalueterGradeInput.requestFocusInWindow();
         }
         else {
@@ -394,12 +392,12 @@ public class GradeCalculator {
         test_left = Math.round(test_left);
         double test_right = teacherGrade/(1-teacherGrade);
         test_right *= 10000;
-        test_right = Math.round(test_left);
+        test_right = Math.round(test_right);
         test_right = test_right/10000;
         test_left = test_left/10000;
         String test_result = "the left site of test = " + test_left + "; \nthe right site of test = " + test_right;
         if (test_left == test_right){
-            test_result += "\n test was successful";
+            test_result += "\ntest was successful";
         }
         JOptionPane.showMessageDialog(null, test_result);
     }
@@ -408,12 +406,12 @@ public class GradeCalculator {
         zooming = -1.0;
         studentNames = new ArrayList<>();
         studentNameWithTeacherGrade = new HashMap<String, Double>();
-        toTest = new HashMap<String, Double>();
+        toTest = new HashMap<>();
         tmpNames = new ArrayList<>();
         doneStudentNames = new ArrayList<>();
         currentStudentEvaluations = new ArrayList<>();
-        studentNameWithStudentsGrades = new HashMap<String, List<Double>>();
-        geometrical_mean_per_student = new HashMap<String, Double>();
+        studentNameWithStudentsGrades = new HashMap<>();
+        geometrical_mean_per_student = new HashMap<>();
         showIntermediateResults = false;
 
         group_median = 1;
