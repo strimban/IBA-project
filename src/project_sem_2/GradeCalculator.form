@@ -18,7 +18,7 @@
           <font name="Helvetica Neue" size="48"/>
           <horizontalTextPosition value="10"/>
           <icon value="project_sem_2/files/logo2.png"/>
-          <text value="Grade Claculator"/>
+          <text value="Grade Claculator "/>
         </properties>
       </component>
       <vspacer id="fef86">
