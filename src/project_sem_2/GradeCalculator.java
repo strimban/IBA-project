@@ -289,7 +289,7 @@ public class GradeCalculator {
         }
         try {
             double tmp_note = Double.parseDouble(evalueterGradeInput.getText());
-            if (tmp_note >= 0){
+            if (tmp_note > 0){
                 currentStudentEvaluations.add(tmp_note);
 
                 try {

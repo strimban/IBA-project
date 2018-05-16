@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="IBA-project:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/IBA_project_jar</output-path>
+    <root id="archive" name="IBA-project.jar">
+      <element id="module-output" name="IBA-project" />
+    </root>
+  </artifact>
+</component>
